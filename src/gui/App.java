@@ -1,5 +1,6 @@
 package gui;
 
+import shape.base.CloseShape;
 import shape.rectangle.Rectangle;
 import shape.base.Shape;
 import shape.polygon.RegularPolygon;
@@ -31,16 +32,18 @@ public class App extends JFrame {
     private JButton frameColorButton;
     private JToggleButton moveShapesButton;
     private JIconComboBox widthComboBox;
+    private RegularPolygonDialog sideNumDialog;
     private ArrayList<Shape> shapes = new ArrayList<>();
     private boolean isDragged = false;
     private boolean isFrameColorChanging = true;
     private DrawAction drawAction = DrawAction.MOVE;
     private int frameWidth = 1;
-    private Color frameColor = new Color(0,0,0);
-    private Color fillColor = new Color(255,255,255);
+    private Color frameColor = new Color(0, 0, 0);
+    private Color fillColor = new Color(255, 255, 255);
 
     public App() {
         super("Hello World");
+        sideNumDialog = new RegularPolygonDialog(this);
         setContentPane(rootPanel);
         setUpGUI();
         setSize(500, 400);
@@ -55,8 +58,7 @@ public class App extends JFrame {
                 if (isFrameColorChanging) {
                     frameColor = new Color(redSlider.getValue(), greenSlider.getValue(), blueSlider.getValue());
                     frameColorButton.setBackground(frameColor);
-                }
-                else {
+                } else {
                     fillColor = new Color(redSlider.getValue(), greenSlider.getValue(), blueSlider.getValue());
                     fillColorButton.setBackground(fillColor);
                 }
@@ -65,7 +67,10 @@ public class App extends JFrame {
     }
 
     private void setUpGUI() {
-        regularPolygonButton.addActionListener(e -> drawAction = DrawAction.REGULAR_POLYGON);
+        regularPolygonButton.addActionListener(e -> {
+            drawAction = DrawAction.REGULAR_POLYGON;
+            sideNumDialog.showDialog();
+        });
         rectangleButton.addActionListener(e -> drawAction = DrawAction.RECTANGLE);
         ellipseButton.addActionListener(e -> drawAction = DrawAction.ELLIPSE);
         moveShapesButton.addActionListener(e -> drawAction = DrawAction.MOVE);
@@ -114,7 +119,8 @@ public class App extends JFrame {
                         shapes.add(new Ellipse(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
                         break;
                     case REGULAR_POLYGON:
-                        shapes.add(new RegularPolygon(e.getPoint(), e.getPoint(), 6, frameWidth, frameColor, fillColor));
+                        shapes.add(new RegularPolygon(e.getPoint(), e.getPoint(), sideNumDialog.getSideNum(),
+                                frameWidth, frameColor, fillColor));
                 }
             }
 
@@ -127,49 +133,69 @@ public class App extends JFrame {
         drawPanel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                Shape currentShape = shapes.get(shapes.size() - 1);
-                if (SwingUtilities.isLeftMouseButton(e))
+                if (SwingUtilities.isLeftMouseButton(e) && shapes.size() > 0) {
+                    Shape currentShape = shapes.get(shapes.size() - 1);
                     switch (drawAction) {
                         case MOVE:
                             if (isDragged)
                                 currentShape.move(e.getPoint());
                             break;
                         case RECTANGLE:
-                            Rectangle rectangle = (Rectangle) currentShape;
-                            rectangle.setCornerPoint(e.getPoint());
+                            if (e.isShiftDown()) {
+                                if (currentShape.getClass() != RegularPolygon.class) {
+                                    RegularPolygon square = new RegularPolygon(currentShape.getLocation(),
+                                            e.getPoint(), 4, currentShape.getFrameWidth(),
+                                            currentShape.getFrameColor(), ((CloseShape) currentShape).getFillColor());
+                                    square.setRotating(false);
+                                    shapes.set(shapes.size() - 1, square);
+                                } else
+                                    ((RegularPolygon) currentShape).setPointOnCircle(e.getPoint());
+                            } else {
+                                if (currentShape.getClass() != Rectangle.class) {
+                                    Rectangle rectangle = new Rectangle(currentShape.getLocation(), e.getPoint(),
+                                            currentShape.getFrameWidth(), currentShape.getFrameColor(),
+                                            ((CloseShape) currentShape).getFillColor());
+                                    shapes.set(shapes.size() - 1, rectangle);
+                                } else
+                                    ((Rectangle) currentShape).setCornerPoint(e.getPoint());
+                            }
                             break;
                         case ELLIPSE:
                             Ellipse ellipse = (Ellipse) currentShape;
                             ellipse.setCornerPoint(e.getPoint());
-                            if(e.isShiftDown() && currentShape.getClass()!= Circle.class) {
+                            if (e.isShiftDown() && currentShape.getClass() != Circle.class) {
                                 ellipse = new Circle(ellipse.getLocation(), ellipse.getCornerPoint(),
                                         ellipse.getFrameWidth(), ellipse.getFrameColor(), ellipse.getFillColor());
                                 shapes.set(shapes.size() - 1, ellipse);
-                            }
-                            else if(!e.isShiftDown() && currentShape.getClass()!= Ellipse.class)
+                            } else if (!e.isShiftDown() && currentShape.getClass() != Ellipse.class)
                                 ellipse = new Ellipse(ellipse.getLocation(), ellipse.getCornerPoint(),
-                                        ellipse.getFrameWidth(),ellipse.getFrameColor(),ellipse.getFillColor());
-                                shapes.set(shapes.size()-1, ellipse);
+                                        ellipse.getFrameWidth(), ellipse.getFrameColor(), ellipse.getFillColor());
+                            shapes.set(shapes.size() - 1, ellipse);
                             break;
                         case REGULAR_POLYGON:
                             RegularPolygon polygon = (RegularPolygon) currentShape;
                             polygon.setPointOnCircle(e.getPoint());
+                            if (e.isShiftDown() && polygon.isRotating())
+                                polygon.setRotating(false);
+                            else if (!e.isShiftDown() && !polygon.isRotating())
+                                polygon.setRotating(true);
                             break;
                     }
-                repaint();
+                    repaint();
+                }
             }
         });
         widthComboBox.addItem(new ImageIcon(getClass().getResource("/resources/line_width_1.png")));
         widthComboBox.addItem(new ImageIcon(getClass().getResource("/resources/line_width_2.png")));
         widthComboBox.addItem(new ImageIcon(getClass().getResource("/resources/line_width_3.png")));
         widthComboBox.addItem(new ImageIcon(getClass().getResource("/resources/line_width_4.png")));
-        widthComboBox.addActionListener(e-> frameWidth=(int)Math.pow(2, widthComboBox.getSelectedIndex()));
+        widthComboBox.addActionListener(e -> frameWidth = (int) Math.pow(2, widthComboBox.getSelectedIndex()));
 
         ActionListener buttonColorListener = e -> {
             JButton source = (JButton) e.getSource();
-            if ((!isFrameColorChanging && source==frameColorButton) ||
-                    (isFrameColorChanging && source==fillColorButton)) {
-                isFrameColorChanging=!isFrameColorChanging;
+            if ((!isFrameColorChanging && source == frameColorButton) ||
+                    (isFrameColorChanging && source == fillColorButton)) {
+                isFrameColorChanging = !isFrameColorChanging;
                 setSlidersColor(source.getBackground());
                 changeButtonsSize(frameColorButton, fillColorButton);
                 validate();
