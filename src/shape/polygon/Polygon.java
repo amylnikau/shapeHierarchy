@@ -53,11 +53,73 @@ public class Polygon extends CloseShape {
 
     @Override
     public boolean contains(Point pt) {
-        return false;
+        int hits = 0;
+
+        int lastx = xPoints[xPoints.length-1];
+        int lasty = yPoints[yPoints.length-1];
+        int curx, cury;
+
+        // Walk the edges of the polygon
+        for (int i = 0; i < xPoints.length; lastx = curx, lasty = cury, i++) {
+            curx = xPoints[i];
+            cury = yPoints[i];
+
+            if (cury == lasty) {
+                continue;
+            }
+
+            int leftx;
+            if (curx < lastx) {
+                if (pt.x >= lastx) {
+                    continue;
+                }
+                leftx = curx;
+            } else {
+                if (pt.x >= curx) {
+                    continue;
+                }
+                leftx = lastx;
+            }
+
+            double test1, test2;
+            if (cury < lasty) {
+                if (pt.y < cury || pt.y >= lasty) {
+                    continue;
+                }
+                if (pt.x < leftx) {
+                    hits++;
+                    continue;
+                }
+                test1 = pt.x - curx;
+                test2 = pt.y - cury;
+            } else {
+                if (pt.y < lasty || pt.y >= cury) {
+                    continue;
+                }
+                if (pt.x < leftx) {
+                    hits++;
+                    continue;
+                }
+                test1 = pt.x - lastx;
+                test2 = pt.y - lasty;
+            }
+
+            if (test1 < (test2 / (lasty - cury) * (lastx - curx))) {
+                hits++;
+            }
+        }
+        return ((hits & 1) != 0);
     }
 
     @Override
     public void move(Point pt) {
-
+        Point theCenter = getLocation();
+        int deltaX = pt.x-theCenter.x;
+        int deltaY = pt.y-theCenter.y;
+        for (int i = 0; i < xPoints.length; i++) {
+            xPoints[i]+=deltaX;
+            yPoints[i]+=deltaY;
+        }
+        setLocation(pt);
     }
 }
