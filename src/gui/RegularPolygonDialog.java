@@ -39,6 +39,9 @@ public class RegularPolygonDialog extends JDialog {
     }
 
     public void showDialog() {
+        Point dialogLocation = getParent().getLocation();
+        dialogLocation.translate(50, 50);
+        setLocation(dialogLocation);
         setSideNum();
         setVisible(true);
     }

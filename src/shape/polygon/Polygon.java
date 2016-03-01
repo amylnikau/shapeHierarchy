@@ -120,6 +120,6 @@ public class Polygon extends CloseShape {
             xPoints[i]+=deltaX;
             yPoints[i]+=deltaY;
         }
-        setLocation(pt);
+        super.move(pt);
     }
 }
