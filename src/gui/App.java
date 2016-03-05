@@ -1,6 +1,8 @@
 package gui;
 
 import shape.base.CloseShape;
+import shape.line.Line;
+import shape.line.Ray;
 import shape.line.Segment;
 import shape.rectangle.Rectangle;
 import shape.base.Shape;
@@ -17,16 +19,16 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
-enum DrawAction {MOVE, RECTANGLE, ELLIPSE, REGULAR_POLYGON, SEGMENT}
+enum DrawAction {MOVE, RECTANGLE, ELLIPSE, REGULAR_POLYGON, SEGMENT, RAY, LINE}
 
 public class App extends JFrame {
-    private JToggleButton rectangleButton, ellipseButton, regularPolygonButton, segmentButton;
+    private JToggleButton rectangleButton, ellipseButton, regularPolygonButton, segmentButton,
+            lineButton, rayButton;
+    private JToggleButton moveShapesButton;
     private JPanel rootPanel;
     private JPanel drawPanel;
     private JSlider redSlider, greenSlider, blueSlider;
-    private JButton button7;
     private JButton frameColorButton, fillColorButton;
-    private JToggleButton moveShapesButton;
     private JIconComboBox widthComboBox;
     private JCheckBox transparencyCheckBox;
     private RegularPolygonDialog sideNumDialog;
@@ -65,6 +67,8 @@ public class App extends JFrame {
     }
 
     private void setUpGUI() {
+        lineButton.addActionListener(e -> drawAction = DrawAction.LINE);
+        rayButton.addActionListener(e -> drawAction = DrawAction.RAY);
         segmentButton.addActionListener(e -> drawAction = DrawAction.SEGMENT);
         regularPolygonButton.addActionListener(e -> {
             drawAction = DrawAction.REGULAR_POLYGON;
@@ -124,6 +128,12 @@ public class App extends JFrame {
                     case SEGMENT:
                         shapes.add(new Segment(e.getPoint(), e.getPoint(), frameWidth, frameColor));
                         break;
+                    case RAY:
+                        shapes.add(new Ray(e.getPoint(), e.getPoint(), frameWidth, frameColor));
+                        break;
+                    case LINE:
+                        shapes.add(new Line(e.getPoint(), e.getPoint(), frameWidth, frameColor));
+                        break;
                 }
             }
 
@@ -132,6 +142,7 @@ public class App extends JFrame {
                 if (drawAction == DrawAction.MOVE)
                     isDragged = false;
             }
+
         });
         drawPanel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -184,6 +195,8 @@ public class App extends JFrame {
                                 polygon.setRotating(true);
                             break;
                         case SEGMENT:
+                        case RAY:
+                        case LINE:
                             Segment segment = (Segment) currentShape;
                             if (e.isShiftDown())
                                 segment.setEndPoint(e.getPoint(), true);
@@ -214,8 +227,8 @@ public class App extends JFrame {
         frameColorButton.addActionListener(buttonColorListener);
         fillColorButton.addActionListener(buttonColorListener);
         transparencyCheckBox.addItemListener(e -> {
-            boolean isChecked=e.getStateChange() == ItemEvent.SELECTED;
-            fillColor=new Color(fillColor.getRGB()&0x00ffffff, isChecked);
+            boolean isChecked = e.getStateChange() == ItemEvent.SELECTED;
+            fillColor = new Color(fillColor.getRGB() & 0x00ffffff, isChecked);
             fillColorButton.setEnabled(!isChecked);
         });
     }

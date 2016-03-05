@@ -18,25 +18,25 @@ public class Segment extends shape.base.Shape {
 
     @Override
     public void draw(Graphics2D g) {
-        Point theCenter = getLocation();
+        Point startPoint = getLocation();
         g.setStroke(new BasicStroke(getFrameWidth()));
         g.setColor(getFrameColor());
-        g.drawLine(theCenter.x, theCenter.y, endPoint.x, endPoint.y);
+        g.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
     }
 
     @Override
     public boolean contains(Point pt) {
         Point theCenter = getLocation();
         int a = endPoint.y - theCenter.y;
-        int b = theCenter.x - endPoint.x;
-        double d = (a * pt.x + b * pt.y - b * theCenter.y - a * theCenter.x) / (Math.sqrt(a * a + b * b));
+        int b = endPoint.x - theCenter.x;
+        double d = (a * pt.x - b * pt.y + b * theCenter.y - a * theCenter.x) / (Math.sqrt(a * a + b * b));
         return Math.abs(d) < getFrameWidth() / 2;
     }
 
     @Override
     public void move(Point pt) {
         Point theCenter = getLocation();
-        endPoint.translate(pt.x - theCenter.x, pt.y - theCenter.y);
+        setEndPoint(new Point(endPoint.x + pt.x - theCenter.x, endPoint.y + pt.y - theCenter.y));
         super.move(pt);
     }
 
