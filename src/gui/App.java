@@ -4,9 +4,10 @@ import shape.base.CloseShape;
 import shape.line.Line;
 import shape.line.Ray;
 import shape.line.Segment;
+import shape.polygon.*;
+import shape.polygon.Polygon;
 import shape.rectangle.Rectangle;
 import shape.base.Shape;
-import shape.polygon.RegularPolygon;
 import shape.rectangle.Circle;
 import shape.rectangle.Ellipse;
 
@@ -16,14 +17,17 @@ import javax.swing.event.ChangeListener;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.ListIterator;
+import java.util.*;
+import java.util.List;
 
-enum DrawAction {MOVE, RECTANGLE, ELLIPSE, REGULAR_POLYGON, SEGMENT, RAY, LINE}
+enum DrawAction {
+    MOVE, RECTANGLE, ELLIPSE, REGULAR_POLYGON, SEGMENT, RAY, LINE,
+    POLYGON, UPDATE_POLYGON, PARALLELOGRAM, RHOMBUS
+}
 
 public class App extends JFrame {
     private JToggleButton rectangleButton, ellipseButton, regularPolygonButton, segmentButton,
-            lineButton, rayButton;
+            lineButton, rayButton, polygonButton, parallelogramButton, rhombusButton;
     private JToggleButton moveShapesButton;
     private JPanel rootPanel;
     private JPanel drawPanel;
@@ -67,6 +71,9 @@ public class App extends JFrame {
     }
 
     private void setUpGUI() {
+        rhombusButton.addActionListener(e -> drawAction = DrawAction.RHOMBUS);
+        parallelogramButton.addActionListener(e -> drawAction = DrawAction.PARALLELOGRAM);
+        polygonButton.addActionListener(e -> drawAction = DrawAction.POLYGON);
         lineButton.addActionListener(e -> drawAction = DrawAction.LINE);
         rayButton.addActionListener(e -> drawAction = DrawAction.RAY);
         segmentButton.addActionListener(e -> drawAction = DrawAction.SEGMENT);
@@ -102,38 +109,62 @@ public class App extends JFrame {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                switch (drawAction) {
-                    case MOVE:
-                        ListIterator<Shape> li = shapes.listIterator(shapes.size());
-                        while (li.hasPrevious()) {
-                            int prevIndex = li.previousIndex();
-                            if (li.previous().contains(e.getPoint())) {
-                                isDragged = true;
-                                shapes.add(shapes.remove(prevIndex));
-                                break;
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    switch (drawAction) {
+                        case MOVE:
+                            ListIterator<Shape> li = shapes.listIterator(shapes.size());
+                            while (li.hasPrevious()) {
+                                int prevIndex = li.previousIndex();
+                                if (li.previous().contains(e.getPoint())) {
+                                    isDragged = true;
+                                    shapes.add(shapes.remove(prevIndex));
+                                    break;
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case RECTANGLE:
-                        shapes.add(new Rectangle(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
-                        break;
-                    case ELLIPSE:
-                        shapes.add(new Ellipse(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
-                        break;
-                    case REGULAR_POLYGON:
-                        shapes.add(new RegularPolygon(e.getPoint(), e.getPoint(), sideNumDialog.getSideNum(),
-                                frameWidth, frameColor, fillColor));
-                        break;
-                    case SEGMENT:
-                        shapes.add(new Segment(e.getPoint(), e.getPoint(), frameWidth, frameColor));
-                        break;
-                    case RAY:
-                        shapes.add(new Ray(e.getPoint(), e.getPoint(), frameWidth, frameColor));
-                        break;
-                    case LINE:
-                        shapes.add(new Line(e.getPoint(), e.getPoint(), frameWidth, frameColor));
-                        break;
+                        case RECTANGLE:
+                            shapes.add(new Rectangle(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
+                            break;
+                        case ELLIPSE:
+                            shapes.add(new Ellipse(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
+                            break;
+                        case REGULAR_POLYGON:
+                            shapes.add(new RegularPolygon(e.getPoint(), e.getPoint(), sideNumDialog.getSideNum(),
+                                    frameWidth, frameColor, fillColor));
+                            break;
+                        case SEGMENT:
+                            shapes.add(new Segment(e.getPoint(), e.getPoint(), frameWidth, frameColor));
+                            break;
+                        case RAY:
+                            shapes.add(new Ray(e.getPoint(), e.getPoint(), frameWidth, frameColor));
+                            break;
+                        case LINE:
+                            shapes.add(new Line(e.getPoint(), e.getPoint(), frameWidth, frameColor));
+                            break;
+                        case POLYGON:
+                            List<Point> points = new ArrayList<>();
+                            points.add(e.getPoint());
+                            points.add(e.getPoint());
+                            shapes.add(new Polygon(e.getPoint(), points, frameWidth, frameColor, fillColor));
+                            drawAction = DrawAction.UPDATE_POLYGON;
+                            break;
+                        case UPDATE_POLYGON:
+                            Shape currentShape = shapes.get(shapes.size() - 1);
+                            ((Polygon) currentShape).addPoint(e.getPoint());
+                            break;
+                        case PARALLELOGRAM:
+                            shapes.add(new Parallelogram(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
+                            break;
+                        case RHOMBUS:
+                            shapes.add(new Rhombus(e.getPoint(), e.getPoint(), frameWidth, frameColor, fillColor));
+                            break;
+                    }
+                    repaint();
+                } else if (SwingUtilities.isRightMouseButton(e)) {
+                    if (drawAction == DrawAction.UPDATE_POLYGON) {
+                        drawAction = DrawAction.POLYGON;
+                    }
                 }
             }
 
@@ -144,6 +175,7 @@ public class App extends JFrame {
             }
 
         });
+
         drawPanel.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
@@ -202,6 +234,13 @@ public class App extends JFrame {
                                 segment.setEndPoint(e.getPoint(), true);
                             else
                                 segment.setEndPoint(e.getPoint());
+                            break;
+                        case UPDATE_POLYGON:
+                            ((Polygon) currentShape).setLastPoint(e.getPoint());
+                            break;
+                        case PARALLELOGRAM:
+                        case RHOMBUS:
+                            ((Parallelogram) currentShape).setCornerPoint(e.getPoint());
                             break;
                     }
                     repaint();
